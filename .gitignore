@@ -1,0 +1,3 @@
+cmd/cmd
+load-test/load-test
+coverage.out

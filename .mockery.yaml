@@ -1,0 +1,11 @@
+with-expecter: true
+packages:
+    github.com/jansemmelink/league-ranker:
+        # place your package-specific config here
+        config:
+        interfaces:
+            src:
+                # select the interfaces you want mocked
+                Ranker:
+                    # Modify package-level config for this specific interface (if applicable)
+                    config:
