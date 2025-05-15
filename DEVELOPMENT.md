@@ -1,5 +1,19 @@
 # Development
 
+# Design
+
+The data is modelled as:
+* Ranker: Read file into memory as Games and Teams
+* Game: Consists of 2 teams, each with a score for the game, modeled as TeamScore
+* Games: A collection of chronological games played
+* TeamScore: Links a team to a score in a game
+* Team: Represents a named team with accumulation of points
+* Teams: Manages the collection of teams
+
+All the models are defined as an interface and an implementation to protect (scope) the internals from the users of the model.
+
+Ranker can be created and then add games as they are played and see the league change, or process all games at once from a file.
+
 # Unit Test Coverage
 Check test coverage with:
 ```

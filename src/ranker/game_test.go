@@ -10,7 +10,47 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGameValidLine(t *testing.T) {
+func TestNewGame(t *testing.T) {
+	teams := ranker.NewTeams()
+
+	const (
+		teamName1  = "A"
+		teamName2  = "B"
+		teamScore1 = 4
+		teamScore2 = 5
+	)
+	g := must(ranker.NewGame(
+		must(ranker.NewTeamScore(teams.GetByName(teamName1), teamScore1)),
+		must(ranker.NewTeamScore(teams.GetByName(teamName2), teamScore2)),
+	))
+	assert.Equal(t, teamName1, g.TeamScore(0).Team().Name())
+	assert.Equal(t, teamScore1, g.TeamScore(0).Score())
+	assert.Equal(t, teamName2, g.TeamScore(1).Team().Name())
+	assert.Equal(t, teamScore2, g.TeamScore(1).Score())
+	assert.Nil(t, g.TeamScore(-1), "out of range index expected to return nil")
+	assert.Nil(t, g.TeamScore(2), "out of range index expected to return nil")
+}
+
+func TestNewGameFailure(t *testing.T) {
+	teams := ranker.NewTeams()
+	teamScore, _ := ranker.NewTeamScore(teams.GetByName("A"), 1)
+
+	{
+		g, err := ranker.NewGame(teamScore, nil)
+		assert.NotNil(t, err)
+		assert.Nil(t, g)
+		assert.True(t, errors.Is(err, ranker.ErrInvalidGame))
+	}
+
+	{
+		g, err := ranker.NewGame(nil, teamScore)
+		assert.NotNil(t, err)
+		assert.Nil(t, g)
+		assert.True(t, errors.Is(err, ranker.ErrInvalidGame))
+	}
+}
+
+func TestNewGameFromStringValidLine(t *testing.T) {
 	for _, test := range []struct {
 		name          string
 		line          string
@@ -24,7 +64,7 @@ func TestGameValidLine(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			teams := ranker.NewTeams()
-			g, err := ranker.GameFromString(test.line, teams)
+			g, err := ranker.NewGameFromString(test.line, teams)
 			assert.Nil(t, err)
 			assert.NotNil(t, g)
 			assert.Equal(t, test.expTeamName1, g.TeamScore(0).Team().Name(), "wrong team[0] name")
@@ -33,16 +73,6 @@ func TestGameValidLine(t *testing.T) {
 			assert.Equal(t, test.expTeamScore2, g.TeamScore(1).Score(), "wrong team[1].score")
 			assert.Equal(t, fmt.Sprintf("%s %d, %s %d", test.expTeamName1, test.expTeamScore1, test.expTeamName2, test.expTeamScore2), g.String(), "wrong game string")
 			assert.True(t, true)
-
-			//out of range index does not return nil:
-			assert.NotNil(t, g.TeamScore(-1))                  //out of range index
-			assert.NotNil(t, g.TeamScore(-1).Team())           //out of range index
-			assert.Equal(t, "", g.TeamScore(-1).Team().Name()) //out of range index
-			assert.Equal(t, 0, g.TeamScore(-1).Score())        //out of range index
-			assert.NotNil(t, g.TeamScore(2))                   //out of range index
-			assert.NotNil(t, g.TeamScore(2).Team())            //out of range index
-			assert.Equal(t, "", g.TeamScore(2).Team().Name())  //out of range index
-			assert.Equal(t, 0, g.TeamScore(2).Score())         //out of range index
 		})
 	}
 }
@@ -60,7 +90,7 @@ func TestGameInvalidLine(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			teams := ranker.NewTeams()
-			g, err := ranker.GameFromString(test.line, teams)
+			g, err := ranker.NewGameFromString(test.line, teams)
 			assert.NotNil(t, err)
 			assert.Nil(t, g)
 			assert.True(t, strings.Contains(err.Error(), test.expectedError), "error does not contain "+test.expectedError+" in "+err.Error())

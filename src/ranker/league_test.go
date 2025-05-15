@@ -35,14 +35,10 @@ func TestRankerFromStdin(t *testing.T) {
 	}()
 
 	//create rankings from stdin
-	ranker, err := RankerFromFile("")
+	league, err := NewLeagueFromFile("")
 	assert.Nil(t, err)
-	assert.NotNil(t, ranker)
-	defer ranker.Close()
-
-	err = ranker.Process()
-	assert.Nil(t, err)
-	assert.Equal(t, 4, len(ranker.Teams().All()))
+	assert.NotNil(t, league)
+	assert.Equal(t, 4, len(league.Teams().All()))
 }
 
 func TestRankerFromNamedFile(t *testing.T) {
@@ -71,7 +67,7 @@ func TestRankerFromNamedFile(t *testing.T) {
 			assert.Nil(t, err, "failed to get absolute filename")
 			t.Logf("Absolute path: %s", absPath)
 
-			//write test lines to named file to parse by the ranker to create 4 different teams
+			//write test lines to named file to parse by the league to create 4 different teams
 			for _, line := range test.lines {
 				_, err := tmpFile.Write([]byte(line + "\n"))
 				assert.Nil(t, err, "failed to write to test file")
@@ -80,54 +76,20 @@ func TestRankerFromNamedFile(t *testing.T) {
 			tmpFile.Close()
 
 			//create rankings from that named file - should work for all these tests
-			ranker, err := RankerFromFile(absPath)
-			assert.Nil(t, err, "failed to create ranker")
-			assert.NotNil(t, ranker, "did not create ranker")
-			defer ranker.Close()
+			league, err := NewLeagueFromFile(absPath)
 
 			//assert it worked (not checking complete ranking logic - that is tested in other tests)
-			err = ranker.Process()
 			if test.expectedError == "" {
 				//expecting process to succeed (i.e. valid file contents)
-				assert.Nil(t, err)
-				assert.Equal(t, 4, len(ranker.Teams().All()), "not correct nr of teams after processing the file")
+				assert.Nil(t, err, "failed to create league")
+				assert.NotNil(t, league, "did not create league")
+				assert.Equal(t, 4, len(league.Teams().All()), "not correct nr of teams after processing the file")
 			} else {
 				//expecting process to fail (i.e. invalid file contents)
-				assert.NotNil(t, err)
+				assert.NotNil(t, err, "create league did not fail as expected")
+				assert.Nil(t, league, "created league when expected error")
 				assert.True(t, strings.Contains(err.Error(), test.expectedError), "expected error "+test.expectedError+" not found in "+err.Error())
 			}
 		}) //test func
 	} //for each test
-}
-
-func TestRankerNamedFileAlreadyClosed(t *testing.T) {
-	//make temp test file
-	tmpFile, err := os.CreateTemp("", "test-ranger.*.txt")
-	assert.Nil(t, err, "failed to create temp file")
-	defer func() {
-		os.Remove(tmpFile.Name()) // Clean up the file when done
-	}()
-
-	// Get absolute path
-	absPath, err := filepath.Abs(tmpFile.Name())
-	assert.Nil(t, err, "failed to get absolute filename")
-	tmpFile.Close()
-
-	//create rankings from that named file - should work even though file is empty
-	ranker, err := RankerFromFile(absPath)
-	assert.Nil(t, err, "failed to create ranker")
-	assert.NotNil(t, ranker, "did not create ranker")
-	defer ranker.Close() //defer here is just in-case - but will already be closed when func returns :-)
-
-	//close the ranker now should work and close the file
-	err = ranker.Close()
-	assert.Nil(t, err, "failed to close ranker after open")
-
-	//process will fail on closed file
-	err = ranker.Process()
-	assert.NotNil(t, err, "processed without error after close")
-
-	//close again should also be ok - although will do nothing
-	err = ranker.Close()
-	assert.Nil(t, err, "failed to close ranker after already closed")
 }

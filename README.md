@@ -51,8 +51,9 @@ Usage of ./cmd:
   -f string
     	Input file to read (default: stdin)
 ```
-# Design Considerations
-* Game leagues are generally limited data sets on a season of games, i.e. no big data and need for streaming large batches of data. Still the code would perform reasonably on thousands of games, e.g. if this is used for online games.
+
+# Design Assumptions
+* Game leagues are generally limited data sets on a season of games, i.e. no big data and need for streaming large batches of data. Still the code would perform reasonably on thousands and even millions of games, e.g. if this is used for online games. Without streaming however, it will need all games in memory at once.
 * Used interfaces and private structs to make mocking possible at each level
 * Defined a constructor from string for each item used for parsing, since we're not processing database content.
-* Considered using mocks, but since there is no external dependencies - did not find much use for using mocks
+* Considered using mocks, but since there is no external dependencies - did not find much use for using mocks.

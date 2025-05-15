@@ -3,6 +3,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"math/rand/v2"
@@ -10,8 +11,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/go-msvc/errors/v2"
-	"github.com/go-msvc/logger"
 	"github.com/jansemmelink/league-ranker/src/ranker"
 )
 
@@ -39,33 +38,22 @@ func main() {
 
 	measure("Generating test data", generateTestData(tmpFilename, *loadTestNrGamesFlag, *loadTestNrTeamsFlag))
 
-	var r ranker.Ranker
-	measure("Making ranker", func() error {
-		r, err = ranker.RankerFromFile(tmpFilename)
+	var league ranker.League
+	measure("Loading league", func() error {
+		league, err = ranker.NewLeagueFromFile(tmpFilename)
 		return err
 	})
-	defer r.Close()
-
-	measure("Running ranker", r.Process)
-
-	league := r.Teams().League()
-	for _, team := range league {
-		fmt.Printf("%d. %s, %d pt%s\n", team.Rank, team.Name, team.Points, plural(team.Points))
+	rankings := league.Teams().Rankings()
+	for _, ranking := range rankings {
+		fmt.Println(ranking.String())
 	}
 } //main()
-
-func plural(i int) string {
-	if i != 1 {
-		return "s"
-	}
-	return ""
-}
 
 func generateTestData(filename string, nrGames, nrTeams int) func() error {
 	return func() error {
 		f, err := os.Create(filename)
 		if err != nil {
-			return errors.Wrapf(err, "failed to create file(%s)", filename)
+			return errors.Join(err, fmt.Errorf("failed to create file(%s)", filename))
 		}
 		defer f.Close()
 
@@ -79,12 +67,9 @@ func generateTestData(filename string, nrGames, nrTeams int) func() error {
 			score2 := rand.IntN(5)
 			fmt.Fprintf(f, "Team %d %d, Team %d %d\n", team1, score1, team2, score2)
 		}
-		log.Infof("Load test generated %d games for %d teams.", nrGames, nrTeams)
 		return nil
 	}
 }
-
-var log = logger.New().WithLevel(logger.LevelError)
 
 func measure(what string, fnc func() error) {
 	t0 := time.Now()

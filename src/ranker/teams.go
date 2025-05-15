@@ -8,13 +8,7 @@ import (
 type Teams interface {
 	GetByName(name string) Team //create if not found
 	All() []Team                //unsorted list of team
-	League() []TeamRanking
-}
-
-type TeamRanking struct {
-	Rank   int
-	Name   string
-	Points int
+	Rankings() []TeamRanking
 }
 
 func NewTeams() Teams {
@@ -42,6 +36,8 @@ func (teams *teams) GetByName(name string) Team {
 func (teams *teams) All() []Team {
 	teams.Lock()
 	defer teams.Unlock() //would be more optimal to use a read-only lock here...
+
+	//make an array of all teams
 	result := []Team{}
 	for _, team := range teams.byName {
 		result = append(result, team)
@@ -54,7 +50,7 @@ func (teams *teams) All() []Team {
 //   - If two or more teams have the same number of points:
 //     they should have the same rank and be
 //     printed in alphabetical order (ascending)
-func (teams *teams) League() []TeamRanking {
+func (teams *teams) Rankings() []TeamRanking {
 	//make a copy and sort the teams in the league
 	allTeams := teams.All()
 	sort.Slice(allTeams, func(i, j int) bool {
@@ -79,9 +75,9 @@ func (teams *teams) League() []TeamRanking {
 	teamRankings := make([]TeamRanking, len(allTeams))
 	for pos, team := range allTeams {
 		teamRanking := TeamRanking{
-			Name:   team.Name(),
-			Points: team.Points(),
-			Rank:   pos + 1,
+			TeamName:   team.Name(),
+			TeamPoints: team.Points(),
+			Rank:       pos + 1,
 		}
 		if pos > 0 && team.Points() == allTeams[pos-1].Points() {
 			//same rank

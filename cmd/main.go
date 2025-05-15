@@ -11,24 +11,13 @@ func main() {
 	inFilenameFlag := flag.String("f", "", "Input file to read (default: stdin)")
 	flag.Parse()
 
-	r, err := ranker.RankerFromFile(*inFilenameFlag)
+	r, err := ranker.NewLeagueFromFile(*inFilenameFlag)
 	if err != nil {
 		panic(fmt.Sprintf("failed to start: %+v", err))
 	}
-	defer r.Close()
-	if err := r.Process(); err != nil {
-		panic(fmt.Sprintf("failed to process: %+v", err))
-	}
 
-	league := r.Teams().League()
-	for _, team := range league {
-		fmt.Printf("%d. %s, %d pt%s\n", team.Rank, team.Name, team.Points, plural(team.Points))
+	rankings := r.Teams().Rankings()
+	for _, ranking := range rankings {
+		fmt.Println(ranking.String())
 	}
 } //main()
-
-func plural(i int) string {
-	if i != 1 {
-		return "s"
-	}
-	return ""
-}

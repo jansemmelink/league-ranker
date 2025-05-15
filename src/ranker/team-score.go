@@ -1,11 +1,10 @@
 package ranker
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
-
-	"github.com/go-msvc/errors/v2"
 )
 
 type TeamScore interface {
@@ -15,10 +14,23 @@ type TeamScore interface {
 	Parse(s string, teams Teams) error
 }
 
-func TeamScoreFromString(s string, teams Teams) (TeamScore, error) {
+func NewTeamScore(team Team, score int) (TeamScore, error) {
+	if team == nil {
+		return nil, errors.Join(ErrInvalidTeamScore, errors.New("missing team"))
+	}
+	if score < 0 {
+		return nil, errors.Join(ErrInvalidTeamScore, errors.New("negative score"))
+	}
+	return &teamScore{
+		team:  team,
+		score: score,
+	}, nil
+}
+
+func NewTeamScoreFromString(s string, teams Teams) (TeamScore, error) {
 	ts := &teamScore{}
 	if err := ts.Parse(s, teams); err != nil {
-		return nil, errors.Wrapf(err, "failed to parse team score")
+		return nil, errors.Join(err, errors.New("failed to parse team score"))
 	}
 	return ts, nil
 }
@@ -41,11 +53,11 @@ func (ts *teamScore) Parse(s string, teams Teams) error {
 	//get the score value from the end of the string, after the last space
 	spaceIndex := strings.LastIndex(s, " ")
 	if spaceIndex < 0 {
-		return errors.Join(ErrInvalidTeamScore, errors.Errorf("not <name> <score>"))
+		return errors.Join(ErrInvalidTeamScore, errors.New("not <name> <score>"))
 	}
 	scoreString := s[spaceIndex+1:] //+1 to skip over the space separator before the score
 	if i64, err := strconv.ParseInt(scoreString, 10, 64); err != nil || i64 < 0 {
-		return errors.Join(ErrInvalidTeamScore, errors.Errorf("not integer >= 0"))
+		return errors.Join(ErrInvalidTeamScore, errors.New("not integer >= 0"))
 	} else {
 		ts.score = int(i64)
 	}

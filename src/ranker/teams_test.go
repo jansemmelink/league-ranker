@@ -51,7 +51,7 @@ func TestRankings(t *testing.T) {
 	} {
 		t.Run(test.line, func(t *testing.T) {
 			//add the game to the league
-			_, err := ranker.GameFromString(test.line, teams)
+			_, err := ranker.NewGameFromString(test.line, teams)
 			assert.Nil(t, err)
 
 			//check expected points
@@ -61,17 +61,17 @@ func TestRankings(t *testing.T) {
 			}
 
 			//check league status after this game
-			league := teams.League()
+			league := teams.Rankings()
 			for _, ranking := range league {
-				if expRank, ok := test.expRankingByTeam[ranking.Name]; ok {
-					assert.Equal(t, expRank, ranking.Rank, "incorrect ranking for "+ranking.Name)
+				if expRank, ok := test.expRankingByTeam[ranking.TeamName]; ok {
+					assert.Equal(t, expRank, ranking.Rank, "incorrect ranking for "+ranking.TeamName)
 				}
 			}
 
 			//log the rank just for fun when running verbose: nice to explain
 			t.Logf("----- AFTER GAME: %s -----", test.line)
 			for _, ranking := range league {
-				t.Logf("  %d. %s %d pts", ranking.Rank, ranking.Name, ranking.Points)
+				t.Logf("  %d. %s %d pts", ranking.Rank, ranking.TeamName, ranking.TeamPoints)
 			}
 		})
 	}

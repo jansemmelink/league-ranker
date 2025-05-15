@@ -1,54 +1,46 @@
 package ranker
 
 import (
+	"errors"
+	"fmt"
 	"strings"
-
-	"github.com/go-msvc/errors/v2"
 )
 
+// Game represents the score of the two teams that played each other
 type Game interface {
 	String() string
-	Parse(string, Teams) error
-	TeamScore(index int) TeamScore
+	TeamScore(index int) TeamScore //index = 0..1
 }
 
-func GameFromString(s string, teams Teams) (Game, error) {
-	g := &game{}
-	if err := g.Parse(s, teams); err != nil {
-		return nil, errors.Join(ErrInvalidGame, errors.Wrapf(err, "failed to parse game"))
-	}
-	return g, nil
-}
-
-type game struct {
-	teamScores [2]TeamScore
-}
-
-func (g game) String() string { return g.teamScores[0].String() + ", " + g.teamScores[1].String() }
-
-func (g game) TeamScore(index int) TeamScore {
-	if index >= 0 && index < 2 {
-		return g.teamScores[index]
-	}
-	return &teamScore{team: &team{}} //should not get here - just safer for caller
-}
-
-// expected CSV with two team scores
-func (g *game) Parse(csv string, teams Teams) error {
+func NewGameFromString(csv string, teams Teams) (Game, error) {
 	columns := strings.SplitN(csv, ",", 3) //split on the ',' into 2 columns (allow 3 to enable detection when more)
 	if len(columns) != 2 {
-		return errors.Join(ErrInvalidGame, errors.Errorf("line format is not \"<team 1 score>, <team 2 score>\""))
-	}
-	//parse both columns
-	for col, teamScore := range columns {
-		ts, err := TeamScoreFromString(teamScore, teams)
-		if err != nil {
-			return errors.Join(ErrInvalidGame, errors.Wrapf(err, "error in column %d", col+1))
-		}
-		log.Debugf("col[%d]: %s", col, ts)
-		g.teamScores[col] = ts
+		return nil, errors.Join(ErrInvalidGame, errors.New("not \"<team 1 score>, <team 2 score>\""))
 	}
 
+	//parse both columns
+	teamScores := [2]TeamScore{}
+	for col, teamScore := range columns {
+		ts, err := NewTeamScoreFromString(teamScore, teams)
+		if err != nil {
+			return nil, errors.Join(ErrInvalidGame, err, fmt.Errorf("error in column %d", col+1))
+		}
+		teamScores[col] = ts
+	}
+	return newGame(teamScores[0], teamScores[1])
+} //NewGameFromString()
+
+func NewGame(score1, score2 TeamScore) (Game, error) {
+	if score1 == nil || score2 == nil {
+		return nil, ErrInvalidGame
+	}
+	return newGame(score1, score2)
+}
+
+func newGame(score1, score2 TeamScore) (Game, error) {
+	g := &game{
+		teamScores: [2]TeamScore{score1, score2},
+	}
 	//game ranking rules (for each team)
 	if g.teamScores[0].Score() == g.teamScores[1].Score() {
 		//a draw (tie) is worth 1 point for each team
@@ -63,9 +55,23 @@ func (g *game) Parse(csv string, teams Teams) error {
 		//	- a loss is worth 0 points
 		g.teamScores[1].Team().Award(3) //winner in column[1]
 	}
+	return g, nil
+} //NewGame()
+
+type game struct {
+	teamScores [2]TeamScore
+}
+
+func (g game) String() string { return g.teamScores[0].String() + ", " + g.teamScores[1].String() }
+
+func (g game) TeamScore(index int) TeamScore {
+	if index >= 0 && index < 2 {
+		return g.teamScores[index]
+	}
 	return nil
 }
 
+// expected CSV with two team scores
 var (
 	ErrInvalidGame = errors.New("invalid game")
 )

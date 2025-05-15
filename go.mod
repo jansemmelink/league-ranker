@@ -3,8 +3,6 @@ module github.com/jansemmelink/league-ranker
 go 1.24.1
 
 require (
-	github.com/go-msvc/errors/v2 v2.0.3
-	github.com/go-msvc/logger v1.1.0
 	github.com/stretchr/testify v1.10.0
 )
 

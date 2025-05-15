@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTeamScoreValidEntries(t *testing.T) {
+func TestNewTeamScoreFromStringWithValidEntries(t *testing.T) {
 	for _, test := range []struct {
 		input       string
 		expectName  string
@@ -22,7 +22,7 @@ func TestTeamScoreValidEntries(t *testing.T) {
 	} {
 		t.Run(test.input, func(t *testing.T) {
 			teams := NewTeams()
-			teamScore, err := TeamScoreFromString(test.input, teams)
+			teamScore, err := NewTeamScoreFromString(test.input, teams)
 			assert.Nil(t, err)
 			assert.NotNil(t, teamScore.Team())
 			assert.Equal(t, test.expectName, teamScore.Team().Name())
@@ -33,7 +33,7 @@ func TestTeamScoreValidEntries(t *testing.T) {
 	}
 }
 
-func TestTeamScoreInvalidEntries(t *testing.T) {
+func TestNewTeamScoreFromStringWithInvalidEntries(t *testing.T) {
 	for _, test := range []struct {
 		input       string
 		expectError string
@@ -45,7 +45,7 @@ func TestTeamScoreInvalidEntries(t *testing.T) {
 	} {
 		t.Run(test.input, func(t *testing.T) {
 			teams := NewTeams()
-			teamScore, err := TeamScoreFromString(test.input, teams)
+			teamScore, err := NewTeamScoreFromString(test.input, teams)
 			assert.NotNil(t, err)
 			assert.Nil(t, teamScore)
 			assert.True(t, errors.Is(err, ErrInvalidTeamScore))
